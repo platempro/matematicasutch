@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Simulacro ICFES Matemáticas PRO</title>
+
+<style>
+body{
+  font-family: Arial, sans-serif;
+  margin:0;
+  background: linear-gradient(135deg,#134E5E,#71B280);
+}
+
+header{
+  text-align:center;
+  padding:18px;
+  color:white;
+  font-size:26px;
+  font-weight:bold;
+}
+
+.container{
+  max-width:1000px;
+  margin:auto;
+  background:white;
+  padding:25px;
+  border-radius:12px;
+  margin-bottom:40px;
+}
+
+.question{
+  background:#f2f2f2;
+  padding:14px;
+  border-radius:10px;
+  margin-bottom:15px;
+}
+
+label{display:block;margin:5px 0;cursor:pointer;}
+
+button{
+  background:#134E5E;
+  color:white;
+  padding:10px 18px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  margin-top:10px;
+}
+
+.correct{color:green;font-weight:bold;}
+.incorrect{color:red;font-weight:bold;}
+
+#timer{
+  text-align:right;
+  font-weight:bold;
+  font-size:18px;
+}
+
+progress{
+  width:100%;
+  height:15px;
+}
+</style>
+</head>
+
+<body>
+
+<header>📘 Simulacro ICFES Matemáticas PRO</header>
+
+<div class="container">
+
+<div id="timer">Tiempo: 20:00</div>
+<progress id="barra" value="0" max="1200"></progress>
+
+<div id="quiz"></div>
+
+<button onclick="calificar()">Calificar</button>
+<button onclick="location.reload()">Nuevo intento</button>
+
+<h2 id="resultado"></h2>
+
+</div>
+
+<script>
+
+/* ===== UTILIDADES ===== */
+
+const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const fix=n=>Number(n.toFixed(2));
+
+function mezclar(arr){return arr.sort(()=>Math.random()-0.5);}
+
+function crear(q, correcta, distractores){
+ let ops=mezclar([correcta,...distractores]);
+ return {q,o:ops,a:ops.indexOf(correcta)};
+}
+
+/* ===== GENERADORES ===== */
+
+function enteros(){
+ let a=rand(-30,30), b=rand(-30,30);
+ let r=a+b;
+ return crear(`Calcula: ${a} + (${b})`, r,[r+5,r-7,r+10]);
+}
+
+function fracciones(){
+ let a=rand(1,9),b=rand(2,10),c=rand(1,9),d=rand(2,10);
+ let r=fix(a/b + c/d);
+ return crear(`Aproxima: ${a}/${b} + ${c}/${d}`, r,[fix(r+0.2),fix(r-0.3),fix(r+0.5)]);
+}
+
+function porcentaje(){
+ let p=rand(10,60), n=rand(100,800);
+ let r=fix(n*p/100);
+ return crear(`${p}% de ${n} es:`, r,[r+20,r-15,r+40]);
+}
+
+function reglaTres(){
+ let a=rand(2,8), b=rand(20,60), c=rand(5,15);
+ let r=fix(b*c/a);
+ return crear(`Si ${a} lápices cuestan $${b}, ¿cuánto cuestan ${c}?`, r,[r+10,r-5,r+18]);
+}
+
+function inversa(){
+ let a=rand(2,6), b=rand(2,6);
+ let k=a*b;
+ let r=fix(k/(b+2));
+ return crear(`Si ${a} obreros tardan ${b} días, ¿cuántos días tardarán ${b+2}? (inversa)`, r,[r+1,r-1,r+2]);
+}
+
+function algebra(){
+ let x=rand(2,12);
+ let r=3*x-2;
+ return crear(`Si 3x − 2 = ${r}, entonces x =`, x,[x+1,x-1,x+2]);
+}
+
+function ecuacion(){
+ let x=rand(2,10);
+ let r=5*x+4;
+ return crear(`Resuelve: 5x + 4 = ${r}`, x,[x+2,x-2,x+1]);
+}
+
+function geometria(){
+ let r=rand(3,10);
+ let area=fix(Math.PI*r*r);
+ return crear(`Área de un círculo de radio ${r} (π≈3.14)`, area,[area+10,area-8,area+20]);
+}
+
+function probabilidad(){
+ let total=rand(10,20), fav=rand(1,total-1);
+ let r=fix(fav/total);
+ return crear(`Probabilidad de éxito si hay ${fav} favorables de ${total}:`, r,[fix(r+0.2),fix(r-0.1),fix(r+0.3)]);
+}
+
+function estadistica(){
+ let a=rand(10,50),b=rand(10,50),c=rand(10,50);
+ let r=fix((a+b+c)/3);
+ return crear(`Media de ${a}, ${b}, ${c}:`, r,[r+5,r-4,r+3]);
+}
+
+function problema(){
+ let precio=rand(2000,5000);
+ let cant=rand(2,6);
+ let pago=rand(20000,30000);
+ let total=precio*cant;
+ let cambio=pago-total;
+ return crear(`Compra ${cant} artículos a $${precio} y paga $${pago}. Cambio:`, cambio,[cambio+1000,cambio-500,cambio+2000]);
+}
+
+/* ===== EXAMEN ===== */
+
+const tipos=[enteros,fracciones,porcentaje,reglaTres,inversa,algebra,ecuacion,geometria,probabilidad,estadistica,problema];
+
+let preguntas=[];
+for(let i=0;i<30;i++){
+ preguntas.push(tipos[rand(0,tipos.length-1)]());
+}
+
+/* ===== MOSTRAR ===== */
+
+const quiz=document.getElementById("quiz");
+
+preguntas.forEach((p,i)=>{
+ let div=document.createElement("div");
+ div.className="question";
+
+ let html=`<b>Pregunta ${i+1}:</b> ${p.q}`;
+
+ p.o.forEach((op,j)=>{
+  html+=`<label><input type="radio" name="q${i}" value="${j}"> ${String.fromCharCode(65+j)}. ${op}</label>`;
+ });
+
+ html+=`<span id="r${i}"></span>`;
+ div.innerHTML=html;
+ quiz.appendChild(div);
+});
+
+/* ===== CALIFICAR ===== */
+
+function calificar(){
+ let ok=0;
+
+ preguntas.forEach((p,i)=>{
+  let radios=document.getElementsByName("q"+i);
+  let resp=-1;
+
+  radios.forEach(r=>{if(r.checked) resp=parseInt(r.value)});
+
+  let span=document.getElementById("r"+i);
+
+  if(resp===p.a){
+   ok++;
+   span.innerHTML=" ✔";
+   span.className="correct";
+  }else{
+   span.innerHTML=" ✘ Resp: "+String.fromCharCode(65+p.a);
+   span.className="incorrect";
+  }
+ });
+
+ let nota=(ok/30*100).toFixed(1);
+ document.getElementById("resultado").innerHTML=`Resultado: ${ok}/30 → ${nota}%`;
+}
+
+/* ===== TEMPORIZADOR 20 MIN ===== */
+
+let tiempo=1200;
+const barra=document.getElementById("barra");
+
+setInterval(()=>{
+ let m=Math.floor(tiempo/60);
+ let s=tiempo%60;
+
+ document.getElementById("timer").innerHTML=`Tiempo: ${m}:${s.toString().padStart(2,'0')}`;
+ barra.value=1200-tiempo;
+
+ if(tiempo===0){
+  alert("⏰ Tiempo terminado");
+  calificar();
+ }
+
+ if(tiempo>0) tiempo--;
+},1000);
+
+</script>
+
+</body>
+</html>
